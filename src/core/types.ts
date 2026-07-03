@@ -47,6 +47,16 @@ export interface SessionRef {
   mtime?: string; // source file last-modified (ISO); drives incremental sync
 }
 
+/** A discovered standalone note/file (not an AI session). */
+export interface DocRef {
+  path: string;
+  title?: string;
+  project?: string;
+  ext: string;
+  bytes: number;
+  mtime: string; // ISO
+}
+
 export type SessionStatus = "raw" | "enriching" | "ready" | "error";
 
 export interface SessionSummary {

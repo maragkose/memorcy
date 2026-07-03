@@ -14,6 +14,7 @@ import { getDb, closeDb } from "../core/db.ts";
 import { applySchema } from "../core/schema.ts";
 import { getAdapter } from "../adapters/registry.ts";
 import { backfill } from "../ingest/backfill.ts";
+import { syncDocuments } from "../ingest/notes.ts";
 import { buildEnrichment } from "../enrichment/registry.ts";
 import { search, resume } from "../core/queries.ts";
 import { exportMdc } from "../export/mdc.ts";
@@ -68,6 +69,17 @@ async function main(): Promise<void> {
       console.log(`backfill: ${stats.sessions} sessions, ${stats.events} events`);
       break;
     }
+    case "notes": {
+      const db = await getDb(cfg);
+      await applySchema(db, { withVectors: cfg.embed !== "none" });
+      if (!cfg.notes.enabled) {
+        console.log("notes indexing disabled (MEM_NOTES=false)");
+        break;
+      }
+      const stats = await syncDocuments(db, cfg);
+      console.log(`notes: ${stats.updated}/${stats.scanned} documents indexed (roots: ${cfg.notes.roots.join(", ")})`);
+      break;
+    }
     case "search": {
       const query = _.slice(1).join(" ") || flags.query || "";
       const db = await getDb(cfg);
@@ -91,7 +103,7 @@ async function main(): Promise<void> {
     case "stats": {
       const db = await getDb(cfg);
       const [rows] = await db.query(
-        `SELECT count() AS n, meta::tb(id) AS tb FROM session, prompt, decision, file GROUP BY tb;`,
+        `SELECT count() AS n, meta::tb(id) AS tb FROM session, prompt, decision, file, document GROUP BY tb;`,
       );
       console.log(JSON.stringify(rows, null, 2));
       break;
@@ -102,6 +114,7 @@ async function main(): Promise<void> {
           "memento <command>",
           "  init                      initialize schema",
           "  backfill --tool cursor    ingest existing sessions",
+          "  notes                     index notes/files from configured roots",
           "  search <query>            search the memory bank",
           "  resume --project <slug>   cold-start briefing",
           "  export                    write the always-apply .mdc digest",

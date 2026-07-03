@@ -31,11 +31,13 @@ Cursor transcripts                SurrealDB (graph + FTS + vectors)         Curs
    sessions, enrich, write graph
 ```
 
-The **daemon** runs three loops:
+The **daemon** runs these loops:
 
 - **Incremental ingest** — every minute it scans sources for new/changed
   transcripts (by mtime) and ingests only those. Idempotent: re-reading a grown
   transcript converges instead of duplicating.
+- **Notes indexing** — on the same tick it walks the configured notes roots and
+  indexes new/changed files (see [Notes & files indexing](#notes--files-indexing)).
 - **Enrichment** — each session gets a deterministic summary + title (optionally
   an LLM summary / embeddings).
 - **Digest export** — whenever something changes (and on a safety-net interval) it
@@ -87,6 +89,27 @@ cat ~/.cursor/rules/memento.mdc
 ```
 
 Project slugs are the `## headings` in the `.mdc` file.
+
+### Notes & files indexing
+
+Beyond AI sessions, memento can index your **notes/files** (markdown, text, org,
+rst, PDF) so their content is searchable alongside your session history. The daemon
+walks the configured roots on the same poll loop (incremental by mtime); notes are
+surfaced via `search`, MCP, and the web UI — they are **not** added to the digest.
+
+```bash
+./run.sh cli notes                 # index now (first run does a full pass)
+./run.sh cli search "quarterly budget"   # notes appear as type: "document"
+```
+
+- **Roots:** default `~/notes` and `~/Documents`. Set `MEM_NOTES_ROOTS` (a
+  `:`-separated list) to anything — e.g. `MEM_NOTES_ROOTS=$HOME` to index your whole
+  home directory.
+- **Safety:** dotdirs, caches, `node_modules`, and obvious secret files (`.env*`,
+  `*.pem`, `*.key`, `id_rsa`, `credentials`, …) are always skipped, plus a per-file
+  size cap (`MEM_NOTES_MAX_BYTES`, default 1 MB).
+- **PDF:** text is extracted if the optional `pdf-parse` dep is installed (it's in
+  `optionalDependencies`); otherwise PDFs are indexed by filename only.
 
 ### Service lifecycle (`run.sh`)
 
@@ -142,6 +165,11 @@ Copy `.env.example` to `.env` (the installer does this). Key settings:
 | `MEM_MDC_INTERVAL_MS` | `300000` | digest safety-net re-export cadence |
 | `MEM_INGEST_WATCH` | `true` | daemon auto-ingests new/changed sessions |
 | `MEM_INGEST_INTERVAL_MS` | `60000` | ingest poll cadence |
+| `MEM_NOTES` | `true` | index notes/files (documents) too |
+| `MEM_NOTES_ROOTS` | `~/notes:~/Documents` | `:`-separated dirs to index (set to `$HOME` for everything) |
+| `MEM_NOTES_EXTS` | `.md,.markdown,.txt,.org,.rst,.pdf` | file types to index |
+| `MEM_NOTES_MAX_BYTES` | `1000000` | skip files larger than this |
+| `MEM_NOTES_IGNORE` | (dotdirs, caches, …) | directory names to skip |
 | `MEM_SERVE_HOST` / `MEM_SERVE_PORT` | `127.0.0.1` / `7077` | web UI / API bind address |
 
 ## Manual / development
@@ -163,10 +191,10 @@ npm run dev:daemon
 
 ```
 src/core/        types, config, db, schema, queries, graph, log
-src/adapters/    SourceAdapter + cursor / claude (stub)
+src/adapters/    SourceAdapter + cursor / claude (stub) + notes (files/docs)
 src/enrichment/  EnrichmentProvider + deterministic / llm + run helper
 src/export/      MdcExporter (always-apply rules-file digest)
-src/ingest/      backfill (full + incremental sync) + live enrichment subscriber
+src/ingest/      backfill (full + incremental sync) + notes + live enrichment subscriber
 src/daemon/      long-running ingest + enrichment + export process
 src/mcp/         stdio MCP server
 src/cli/         standalone CLI

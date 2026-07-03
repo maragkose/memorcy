@@ -43,7 +43,23 @@ export interface Config {
     watch: boolean; // poll sources for new/changed sessions
     intervalMs: number; // poll cadence
   };
+  /** Notes/files indexing: standalone documents (not AI sessions). */
+  notes: {
+    enabled: boolean;
+    roots: string[]; // dirs to walk; set to $HOME to index everything (with ignores)
+    exts: string[]; // lowercase extensions incl. leading dot
+    maxBytes: number; // skip files larger than this
+    ignoreDirs: string[]; // directory names to skip anywhere in the tree
+  };
   dataDir: string;
+}
+
+/** Split a ":"-separated path list, trimming blanks. */
+function pathList(value: string): string[] {
+  return value.split(":").map((s) => s.trim()).filter(Boolean);
+}
+function csv(value: string): string[] {
+  return value.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
 export function loadConfig(): Config {
@@ -77,6 +93,20 @@ export function loadConfig(): Config {
     ingest: {
       watch: env("MEM_INGEST_WATCH", "true") !== "false",
       intervalMs: Number(env("MEM_INGEST_INTERVAL_MS", "60000")), // 1 min
+    },
+    notes: {
+      enabled: env("MEM_NOTES", "true") !== "false",
+      roots: pathList(env("MEM_NOTES_ROOTS", [path.join(home, "notes"), path.join(home, "Documents")].join(":"))),
+      exts: csv(env("MEM_NOTES_EXTS", ".md,.markdown,.txt,.org,.rst,.pdf")).map((e) =>
+        (e.startsWith(".") ? e : `.${e}`).toLowerCase(),
+      ),
+      maxBytes: Number(env("MEM_NOTES_MAX_BYTES", "1000000")), // 1 MB
+      ignoreDirs: csv(
+        env(
+          "MEM_NOTES_IGNORE",
+          "node_modules,.git,.cache,.local,.config,.ssh,.gnupg,.npm,.cargo,.rustup,.venv,venv,__pycache__,dist,build,.next,target,.Trash,snap",
+        ),
+      ),
     },
     dataDir: path.join(home, ".local", "share", "memento"),
   };

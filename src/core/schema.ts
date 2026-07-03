@@ -31,6 +31,19 @@ DEFINE TABLE IF NOT EXISTS file SCHEMALESS;
 DEFINE FIELD IF NOT EXISTS path ON file TYPE string;
 DEFINE FIELD IF NOT EXISTS language ON file TYPE option<string>;
 
+-- Standalone notes/files (not AI sessions): searchable by title + content.
+DEFINE TABLE IF NOT EXISTS document SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS path ON document TYPE string;
+DEFINE FIELD IF NOT EXISTS title ON document TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS content ON document TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS project ON document TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS ext ON document TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS bytes ON document TYPE option<number>;
+DEFINE FIELD IF NOT EXISTS source_mtime ON document TYPE option<datetime>;
+DEFINE INDEX IF NOT EXISTS document_path ON document FIELDS path UNIQUE;
+DEFINE INDEX IF NOT EXISTS document_ft_content ON document FIELDS content FULLTEXT ANALYZER cm_text BM25;
+DEFINE INDEX IF NOT EXISTS document_ft_title ON document FIELDS title FULLTEXT ANALYZER cm_text BM25;
+
 DEFINE TABLE IF NOT EXISTS command SCHEMALESS;
 DEFINE FIELD IF NOT EXISTS text ON command TYPE string;
 DEFINE INDEX IF NOT EXISTS command_ft ON command FIELDS text FULLTEXT ANALYZER cm_text BM25;
@@ -76,6 +89,7 @@ function vectorDDL(dim: number): string {
 DEFINE INDEX IF NOT EXISTS session_vec ON session FIELDS summary_embedding HNSW DIMENSION ${dim} DIST COSINE;
 DEFINE INDEX IF NOT EXISTS prompt_vec ON prompt FIELDS text_embedding HNSW DIMENSION ${dim} DIST COSINE;
 DEFINE INDEX IF NOT EXISTS decision_vec ON decision FIELDS text_embedding HNSW DIMENSION ${dim} DIST COSINE;
+DEFINE INDEX IF NOT EXISTS document_vec ON document FIELDS content_embedding HNSW DIMENSION ${dim} DIST COSINE;
 `;
 }
 

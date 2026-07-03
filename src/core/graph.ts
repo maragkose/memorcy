@@ -80,6 +80,48 @@ export async function existingSessionMtimes(db: Surreal): Promise<Map<string, st
   return map;
 }
 
+/** Deterministic record id from a file path (idempotent re-ingest). */
+export function documentRid(filePath: string): string {
+  return `document:⟨${filePath}⟩`.replace(/[⟨⟩]/g, "`");
+}
+
+export async function upsertDocument(
+  db: Surreal,
+  d: { path: string; title?: string; content?: string; project?: string; ext?: string; bytes?: number; mtime?: string },
+): Promise<string> {
+  const id = documentRid(d.path);
+  const sets = ["path = $path"];
+  const params: Record<string, unknown> = { path: d.path };
+  if (d.title !== undefined) { sets.push("title = $title"); params.title = d.title; }
+  if (d.content !== undefined) { sets.push("content = $content"); params.content = d.content; }
+  if (d.project) { sets.push("project = $project"); params.project = d.project; }
+  if (d.ext) { sets.push("ext = $ext"); params.ext = d.ext; }
+  if (d.bytes !== undefined) { sets.push("bytes = $bytes"); params.bytes = d.bytes; }
+  if (d.mtime) { sets.push("source_mtime = <datetime> $mtime"); params.mtime = d.mtime; }
+  await db.query(`UPSERT ${id} SET ${sets.join(", ")};`, params);
+  if (d.project) {
+    await db.query(
+      `LET $p = (SELECT VALUE id FROM project WHERE slug = $slug)[0];
+       IF $p THEN RELATE ${id}->about->$p END;`,
+      { slug: slugify(d.project) },
+    );
+  }
+  return id;
+}
+
+/** Map of already-ingested documents -> stored source_mtime (ISO or null). */
+export async function existingDocumentMtimes(db: Surreal): Promise<Map<string, string | null>> {
+  const [rows] = await db.query<[Array<{ path: string; source_mtime: unknown }>]>(
+    `SELECT path, source_mtime FROM document;`,
+  );
+  const map = new Map<string, string | null>();
+  for (const r of rows ?? []) {
+    const mt = r.source_mtime instanceof Date ? r.source_mtime.toISOString() : (r.source_mtime as string | null) ?? null;
+    map.set(r.path, mt);
+  }
+  return map;
+}
+
 export async function addPrompt(
   db: Surreal,
   sessionRidStr: string,

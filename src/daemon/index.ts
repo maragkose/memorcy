@@ -13,6 +13,8 @@ import { buildAdapters } from "../adapters/registry.ts";
 import { buildEnrichment } from "../enrichment/registry.ts";
 import { startEnrichmentSubscriber } from "../ingest/live.ts";
 import { syncChanged } from "../ingest/backfill.ts";
+import { syncDocuments } from "../ingest/notes.ts";
+import { NotesSource } from "../adapters/notes.ts";
 import { exportMdc } from "../export/mdc.ts";
 import { log } from "../core/log.ts";
 
@@ -29,6 +31,7 @@ async function main(): Promise<void> {
   // Incremental ingest: poll sources for new/changed sessions, enrich inline,
   // and refresh the digest whenever something changed. No manual backfill.
   const adapters = [...buildAdapters(cfg).values()];
+  const notes = cfg.notes.enabled ? new NotesSource(cfg) : undefined;
   let syncing = false;
   const syncOnce = async () => {
     if (syncing) return; // skip overlapping ticks
@@ -41,6 +44,10 @@ async function main(): Promise<void> {
           return { updated: 0, scanned: 0, events: 0 };
         });
         updated += s.updated;
+      }
+      // Notes/documents (not part of the digest; searchable via CLI/MCP/web).
+      if (notes) {
+        await syncDocuments(db, cfg, notes).catch((e) => log.warn("notes sync failed", e));
       }
       if (updated > 0 && cfg.mdc.enabled) await exportSafe();
     } finally {

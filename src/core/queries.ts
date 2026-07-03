@@ -87,7 +87,28 @@ export async function search(db: Surreal, query: string, opts: SearchOpts = {}):
     params,
   );
 
-  return [...(sessions ?? []), ...(prompts ?? [])]
+  // Notes/documents: match content (refs 0..n-1) and title (refs n..2n-1),
+  // summing both for a combined BM25 score.
+  const nn = ts.length;
+  const whereDoc =
+    ts.map((_, i) => `content @${i}@ $t${i}`).join(" OR ") +
+    " OR " +
+    ts.map((_, i) => `title @${nn + i}@ $t${i}`).join(" OR ");
+  const scoreDoc =
+    ts.map((_, i) => `search::score(${i})`).join(" + ") +
+    " + " +
+    ts.map((_, i) => `search::score(${nn + i})`).join(" + ");
+  const [documents] = await db.query<[Row[]]>(
+    `SELECT meta::id(id) AS id, 'document' AS type,
+            (title ?? path) AS title, source_mtime AS ts, project,
+            (${scoreDoc}) AS score
+     FROM document
+     WHERE (${whereDoc}) AND ($project = NONE OR project = $project)
+     ORDER BY score DESC LIMIT $limit;`,
+    params,
+  );
+
+  return [...(sessions ?? []), ...(prompts ?? []), ...(documents ?? [])]
     .filter((r) => (project ? r.project === project : true))
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
     .slice(0, limit);
