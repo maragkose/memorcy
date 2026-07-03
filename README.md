@@ -17,11 +17,30 @@ Two ways the memory reaches your editor:
 
 See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the full design.
 
+## Table of Contents
+
+- [🏗️ How it works](#️-how-it-works)
+- [Stack](#stack)
+- [📖 Documentation](#-documentation)
+- [🚀 Quick start](#-quick-start)
+- [🎯 Usage](#-usage)
+- [Visualization (web UI)](#visualization-web-ui)
+- [⚙️ Configuration](#️-configuration)
+- [🛠️ Manual / development](#️-manual--development)
+- [Layout](#layout)
+- [Status & limitations](#status--limitations)
+
+## 📖 Documentation
+
+| Document | Description |
+|----------|-------------|
+| **[🏗️ Architecture](./ARCHITECTURE.md)** | Full system design: data model, adapters, enrichment, ingest loops, MCP surface, and phased roadmap |
+
 ---
 
-## How it works
+## 🏗️ How it works
 
-```
+```text
 Cursor transcripts                SurrealDB (graph + FTS + vectors)         Cursor
 ~/.cursor/projects/**/*.jsonl  ─▶  session ─contains─▶ prompt          ─▶  ~/.cursor/rules/
         │  (adapter)                   └─touched─▶ file                     memento.mdc
@@ -52,7 +71,7 @@ No manual backfill needed once the daemon is running.
 - **Enrichment:** deterministic (default, free, offline) + optional LLM (Ollama / OpenAI / Gemini)
 - **Serving:** always-apply `.mdc` rule, CLI, MCP
 
-## Quick start
+## 🚀 Quick start
 
 ```bash
 # 1. Install (prerequisites, deps, build, .env, data dir; optional SurrealDB + MCP)
@@ -68,7 +87,7 @@ No manual backfill needed once the daemon is running.
 That's it. Open a new Cursor chat — it now sees your recent history via the
 auto-generated rule file. The daemon keeps everything fresh from here on.
 
-## Usage
+## 🎯 Usage
 
 ### Automatic (no action needed)
 
@@ -223,7 +242,7 @@ For UI development with hot-reload, run the API and the Vite dev server (it prox
 cd web && npm run dev                # UI on :5173
 ```
 
-## Configuration
+## ⚙️ Configuration
 
 Copy `.env.example` to `.env` (the installer does this). Key settings:
 
@@ -252,7 +271,7 @@ Copy `.env.example` to `.env` (the installer does this). Key settings:
 | `MEM_GIT_MAX_COMMITS` | `500` | cap per repo (newest first) |
 | `MEM_SERVE_HOST` / `MEM_SERVE_PORT` | `127.0.0.1` / `7077` | web UI / API bind address |
 
-## Manual / development
+## 🛠️ Manual / development
 
 ```bash
 cp .env.example .env
@@ -269,7 +288,7 @@ npm run dev:daemon
 
 ## Layout
 
-```
+```text
 src/core/        types, config, db, schema, queries, graph, log
 src/adapters/    SourceAdapter + cursor / claude (stub) + notes (files/docs) + git (commits)
 src/enrichment/  EnrichmentProvider + deterministic / llm + run helper
