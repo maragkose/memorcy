@@ -1,0 +1,37 @@
+{
+  "name": "memento",
+  "version": "0.1.0",
+  "description": "Local-first, cross-tool context memory bank for AI coding sessions (SurrealDB LPG + MCP).",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "memento": "dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev:daemon": "node --experimental-transform-types src/daemon/index.ts",
+    "dev:mcp": "node --experimental-transform-types src/mcp/server.ts",
+    "dev:cli": "node --experimental-transform-types src/cli/index.ts",
+    "dev:serve": "node --experimental-transform-types src/serve/server.ts",
+    "daemon": "node dist/daemon/index.js",
+    "mcp": "node dist/mcp/server.js",
+    "cli": "node dist/cli/index.js",
+    "serve": "node dist/serve/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "surrealdb": "^2.0.4",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "optionalDependencies": {
+    "@huggingface/transformers": "^3.0.0"
+  }
+}
