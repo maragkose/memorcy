@@ -1,5 +1,7 @@
 # memorcy
 
+![memorcy](doc/assets/banner.jpg)
+
 A local-first, cross-tool **context memory bank** for AI coding sessions.
 
 It ingests your Cursor session transcripts, builds a **labeled property graph** in
@@ -15,7 +17,7 @@ Two ways the memory reaches your editor:
    no admin permission.
 2. **MCP + CLI:** query the graph on demand (`search`, `resume`, `stats`).
 
-See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the full design.
+See [`ARCHITECTURE.md`](./doc/ARCHITECTURE.md) for the full design.
 
 ## Table of Contents
 
@@ -34,7 +36,7 @@ See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the full design.
 
 | Document | Description |
 |----------|-------------|
-| **[🏗️ Architecture](./ARCHITECTURE.md)** | Full system design: data model, adapters, enrichment, ingest loops, MCP surface, and phased roadmap |
+| **[🏗️ Architecture](./doc/ARCHITECTURE.md)** | Full system design: data model, adapters, enrichment, ingest loops, MCP surface, and phased roadmap |
 
 ---
 

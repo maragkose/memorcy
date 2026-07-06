@@ -199,7 +199,7 @@ Next steps (via run.sh — the lifecycle manager):
 
 The daemon writes an always-apply digest to ~/.cursor/rules/memorcy.mdc,
 so any Cursor chat sees recent history with no MCP required. If you also
-registered MCP, restart Cursor to expose the memory tools (see ARCHITECTURE.md §8).
+registered MCP, restart Cursor to expose the memory tools (see doc/ARCHITECTURE.md §8).
 EOF
 }
 

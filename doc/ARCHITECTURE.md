@@ -245,8 +245,10 @@ trigger; MCP is the data.
 
 ```
 memorcy/
-├─ ARCHITECTURE.md          # this file
 ├─ README.md
+├─ doc/
+│  ├─ ARCHITECTURE.md       # this file
+│  └─ assets/               # banner + images
 ├─ package.json
 ├─ tsconfig.json
 ├─ .env.example
